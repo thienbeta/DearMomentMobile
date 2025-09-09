@@ -15,8 +15,11 @@ interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   containerStyle?: ViewStyle;
+  disabled?: boolean;
 }
+
 
 export const Input: React.FC<InputProps> = ({
   label,

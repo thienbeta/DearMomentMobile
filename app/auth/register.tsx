@@ -11,76 +11,66 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Mail, Lock, User, Phone, Check, ChevronLeft, UserPlus } from 'lucide-react-native';
+import { Mail, Lock, User, UserPlus, ChevronLeft } from 'lucide-react-native';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { useUserStore } from '@/store/user-store';
 import colors from '@/constants/colors';
+import config from '@/config';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { login } = useUserStore();
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [errors, setErrors] = useState({
-    name: '',
+  const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
-    phone: '',
+    username: '',
     password: '',
-    confirmPassword: '',
-    terms: '',
+    vaiTro: 0, // Default to Customer
+  });
+  const [errors, setErrors] = useState({
+    fullName: '',
+    email: '',
+    username: '',
+    password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value.trim() }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
 
   const validateForm = () => {
     let isValid = true;
     const newErrors = {
-      name: '',
+      fullName: '',
       email: '',
-      phone: '',
+      username: '',
       password: '',
-      confirmPassword: '',
-      terms: '',
     };
 
-    if (!name.trim()) {
-      newErrors.name = 'Vui lòng nhập họ tên';
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Họ tên không được để trống';
       isValid = false;
     }
 
-    if (!email.trim()) {
+    if (!formData.email.trim()) {
       newErrors.email = 'Vui lòng nhập email';
       isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email không hợp lệ';
       isValid = false;
     }
 
-    if (phone.trim() && !/^\d{10,}$/.test(phone.replace(/[^0-9]/g, ''))) {
-      newErrors.phone = 'Số điện thoại không hợp lệ';
+    if (!formData.username.trim()) {
+      newErrors.username = 'Tài khoản không được để trống';
       isValid = false;
     }
 
-    if (!password) {
+    if (!formData.password) {
       newErrors.password = 'Vui lòng nhập mật khẩu';
       isValid = false;
-    } else if (password.length < 6) {
+    } else if (formData.password.length < 6) {
       newErrors.password = 'Mật khẩu tối thiểu 6 ký tự';
-      isValid = false;
-    }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu không khớp';
-      isValid = false;
-    }
-
-    if (!acceptTerms) {
-      newErrors.terms = 'Bạn cần đồng ý với điều khoản sử dụng';
       isValid = false;
     }
 
@@ -88,24 +78,38 @@ export default function RegisterScreen() {
     return isValid;
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!validateForm()) return;
     setIsLoading(true);
-    setTimeout(() => {
-      const newUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        name,
-        email,
-        phone: phone || undefined,
-        isAdmin: false,
-        addresses: [],
-      };
-      login(newUser);
-      setIsLoading(false);
-      Alert.alert('Đăng ký thành công', 'Tài khoản của bạn đã được tạo!', [
-        { text: 'OK', onPress: () => router.replace('/') },
+
+    const formDataPayload = new FormData();
+    formDataPayload.append('HoTen', formData.fullName.trim());
+    formDataPayload.append('Email', formData.email.trim());
+    formDataPayload.append('TaiKhoan', formData.username.trim());
+    formDataPayload.append('MatKhau', formData.password);
+    formDataPayload.append('VaiTro', formData.vaiTro.toString());
+
+    try {
+      const response = await fetch(`${config.API_URL}/api/NguoiDung`, {
+        method: 'POST',
+        body: formDataPayload,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData.Message || Object.values(errorData.errors || {}).flat().join('; ') || 'Đã xảy ra lỗi khi đăng ký';
+        throw new Error(errorMessage);
+      }
+
+      await response.json();
+      Alert.alert('Đăng ký thành công', 'Vui lòng đăng nhập.', [
+        { text: 'OK', onPress: () => router.replace('/auth/login') },
       ]);
-    }, 1500);
+    } catch (err: any) {
+      Alert.alert('Lỗi', err.message || 'Lỗi máy chủ nội bộ');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -118,25 +122,24 @@ export default function RegisterScreen() {
 
           <View style={styles.header}>
             <Text style={styles.title}>Tạo tài khoản</Text>
-            <Text style={styles.subtitle}>Đăng ký để bắt đầu sử dụng DearMoment</Text>
           </View>
 
           <View style={styles.form}>
             <Input
               label="Họ tên"
-              placeholder="Nhập họ tên"
-              value={name}
-              onChangeText={setName}
+              placeholder="Nhập họ và tên"
+              value={formData.fullName}
+              onChangeText={(text) => handleChange('fullName', text)}
               autoCapitalize="words"
-              error={errors.name}
+              error={errors.fullName}
               leftIcon={<User size={20} color={colors.textLight} />}
             />
 
             <Input
               label="Email"
               placeholder="Nhập email"
-              value={email}
-              onChangeText={setEmail}
+              value={formData.email}
+              onChangeText={(text) => handleChange('email', text)}
               keyboardType="email-address"
               autoCapitalize="none"
               error={errors.email}
@@ -144,47 +147,27 @@ export default function RegisterScreen() {
             />
 
             <Input
-              label="Số điện thoại"
-              placeholder="Nhập số điện thoại"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              error={errors.phone}
-              leftIcon={<Phone size={20} color={colors.textLight} />}
+              label="Tài khoản"
+              placeholder="Nhập tài khoản"
+              value={formData.username}
+              onChangeText={(text) => handleChange('username', text)}
+              autoCapitalize="none"
+              error={errors.username}
+              leftIcon={<User size={20} color={colors.textLight} />}
             />
 
             <Input
               label="Mật khẩu"
               placeholder="Nhập mật khẩu"
-              value={password}
-              onChangeText={setPassword}
+              value={formData.password}
+              onChangeText={(text) => handleChange('password', text)}
               secureTextEntry
               error={errors.password}
               leftIcon={<Lock size={20} color={colors.textLight} />}
             />
 
-            <Input
-              label="Mật khẩu xác nhận"
-              placeholder="Mật khẩu xác nhận"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              error={errors.confirmPassword}
-              leftIcon={<Lock size={20} color={colors.textLight} />}
-            />
-
-            <TouchableOpacity style={styles.termsContainer} onPress={() => setAcceptTerms(!acceptTerms)} activeOpacity={0.7}>
-              <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
-                {acceptTerms && <Check size={16} color="#fff" />}
-              </View>
-              <Text style={styles.termsText}>
-                Tôi đồng ý với <Text style={styles.termsLink}>Điều khoản</Text> và <Text style={styles.termsLink}>Chính sách bảo mật</Text>
-              </Text>
-            </TouchableOpacity>
-            {errors.terms ? <Text style={styles.termsError}>{errors.terms}</Text> : null}
-
             <Button
-              title="Tạo tài khoản"
+              title={isLoading ? 'Đang xử lý...' : 'Tạo tài khoản'}
               onPress={handleRegister}
               loading={isLoading}
               fullWidth
@@ -214,15 +197,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: 'bold', color: colors.text, marginBottom: 8 },
   subtitle: { fontSize: 16, color: colors.textLight },
   form: { marginBottom: 24 },
-  termsContainer: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 16, marginBottom: 8 },
-  checkbox: {
-    width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: colors.border,
-    marginRight: 10, justifyContent: 'center', alignItems: 'center', marginTop: 2,
-  },
-  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
-  termsText: { flex: 1, fontSize: 14, color: colors.textLight, lineHeight: 20 },
-  termsLink: { color: colors.primary, fontWeight: '500' },
-  termsError: { color: colors.error, fontSize: 12, marginTop: 4, marginLeft: 30 },
   registerButton: { marginTop: 24, marginBottom: 16 },
   loginContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   loginText: { color: colors.textLight, fontSize: 14 },

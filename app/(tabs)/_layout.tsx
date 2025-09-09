@@ -52,15 +52,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="posts"
-        options={{
-          title: "Cộng Đồng",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name={<Users size={24} color={color} />} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="cart"
         options={{
           title: "Giỏ Hàng",

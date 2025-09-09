@@ -36,7 +36,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          <Text style={styles.storeName}>DearMent</Text>
+          <Text style={styles.storeName}>FashionHub</Text>
           <Text style={styles.storeTagline}>Thời Trang & Phong Cách</Text>
         </View>
 

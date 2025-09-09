@@ -110,14 +110,6 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={colors.textLight} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/posts')}>
-            <View style={styles.menuItemLeft}>
-              <Package size={20} color={colors.text} />
-              <Text style={styles.menuItemText}>Đơn hàng</Text>
-            </View>
-            <ChevronRight size={20} color={colors.textLight} />
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/wishlist')}>
             <View style={styles.menuItemLeft}>
               <Heart size={20} color={colors.text} />
@@ -178,22 +170,6 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={colors.textLight} />
           </TouchableOpacity>
         </View>
-
-        {userPosts.length > 0 && (
-          <View style={styles.menuSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.menuSectionTitle}>Bài viết của tôi</Text>
-              <TouchableOpacity onPress={() => router.push(`/posts/user/${user?.id}`)} style={styles.viewAllButton}>
-                <Text style={styles.viewAllText}>Xem tất cả</Text>
-                <ChevronRight size={16} color={colors.primary} />
-              </TouchableOpacity>
-            </View>
-
-            {userPosts.slice(0, 2).map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </View>
-        )}
 
         <Button
           title="Đăng xuất"
